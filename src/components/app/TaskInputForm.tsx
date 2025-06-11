@@ -1,8 +1,9 @@
+
 "use client";
 
-import type { TaskInput } from '@/components/app/types';
+import type { AppTask } from '@/components/app/types';
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,66 +24,58 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { PlusCircle, Trash2, CalendarDays, Clock, AlertTriangle, Info, ShieldAlert, Loader2, Sparkles } from "lucide-react";
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { PlusCircle, CalendarClock } from "lucide-react";
 
-const taskSchema = z.object({
+const taskFormSchema = z.object({
   taskName: z.string().min(1, "Task name is required"),
-  deadline: z.string().min(1, "Deadline is required"), // Using string for datetime-local
+  deadline: z.string().refine(val => val === '' || !isNaN(new Date(val).getTime()), {
+    message: "Invalid date format for deadline",
+  }).optional().or(z.literal('')), // Making deadline optional
   importance: z.enum(["high", "medium", "low"]),
   estimatedTime: z.coerce.number().min(1, "Estimated time must be positive"),
+  alarmTime: z.string().refine(val => val === '' || !isNaN(new Date(val).getTime()), {
+    message: "Invalid date format for alarm",
+  }).optional().or(z.literal('')),
 });
 
-type TaskFormValues = z.infer<typeof taskSchema>;
+type TaskFormValues = z.infer<typeof taskFormSchema>;
 
 interface TaskInputFormProps {
-  onAddTask: (task: TaskFormValues) => void;
-  currentTasks: TaskInput[];
-  onRemoveTask: (taskId: string) => void;
-  onGenerateSchedule: () => void;
-  isLoading: boolean;
+  onAddTask: (task: Omit<AppTask, 'id' | 'completed'>) => void;
 }
 
-export function TaskInputForm({
-  onAddTask,
-  currentTasks,
-  onRemoveTask,
-  onGenerateSchedule,
-  isLoading,
-}: TaskInputFormProps) {
+export function TaskInputForm({ onAddTask }: TaskInputFormProps) {
   const form = useForm<TaskFormValues>({
-    resolver: zodResolver(taskSchema),
+    resolver: zodResolver(taskFormSchema),
     defaultValues: {
       taskName: "",
       deadline: "",
       importance: "medium",
       estimatedTime: 30,
+      alarmTime: "",
     },
   });
 
   function onSubmit(values: TaskFormValues) {
-    onAddTask(values);
+    const taskData: Omit<AppTask, 'id' | 'completed'> = {
+      taskName: values.taskName,
+      // Ensure deadline is only passed if it's a valid date string, otherwise pass undefined
+      deadline: values.deadline && values.deadline !== '' ? new Date(values.deadline).toISOString() : new Date().toISOString(), // Default to now if not set
+      importance: values.importance,
+      estimatedTime: values.estimatedTime,
+      alarmTime: values.alarmTime && values.alarmTime !== '' ? new Date(values.alarmTime).toISOString() : undefined,
+    };
+    onAddTask(taskData);
     form.reset();
   }
 
-  const importanceIcons = {
-    high: <AlertTriangle className="h-4 w-4 text-red-500" />,
-    medium: <ShieldAlert className="h-4 w-4 text-yellow-500" />,
-    low: <Info className="h-4 w-4 text-blue-500" />,
-  };
-
-  const importanceText = {
-    high: "High",
-    medium: "Medium",
-    low: "Low",
-  };
-
   return (
-    <Card className="shadow-lg">
+    <Card className="shadow-xl border-border/50">
       <CardHeader>
-        <CardTitle className="text-2xl flex items-center"><PlusCircle className="mr-2 h-6 w-6" />Add New Task</CardTitle>
-        <CardDescription>Enter task details to add it to your day's plan.</CardDescription>
+        <CardTitle className="text-2xl flex items-center text-primary">
+          <PlusCircle className="mr-3 h-7 w-7" />Add New Task
+        </CardTitle>
+        <CardDescription>Plan your day by adding tasks below.</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -94,36 +87,23 @@ export function TaskInputForm({
                 <FormItem>
                   <FormLabel>Task Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="E.g., Finish report" {...field} />
+                    <Input placeholder="E.g., Finish report, Call John" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className="grid md:grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="deadline"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Deadline</FormLabel>
-                    <FormControl>
-                      <Input type="datetime-local" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            <div className="grid md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="importance"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Importance</FormLabel>
+                    <FormLabel>Priority</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select importance" />
+                          <SelectValue placeholder="Select priority" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -141,7 +121,7 @@ export function TaskInputForm({
                 name="estimatedTime"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Estimated Time (minutes)</FormLabel>
+                    <FormLabel>Est. Time (min)</FormLabel>
                     <FormControl>
                       <Input type="number" placeholder="E.g., 60" {...field} />
                     </FormControl>
@@ -150,48 +130,41 @@ export function TaskInputForm({
                 )}
               />
             </div>
-            <Button type="submit" className="w-full md:w-auto bg-accent hover:bg-accent/90">
-              <PlusCircle className="mr-2 h-4 w-4" /> Add Task
+            <FormField
+                control={form.control}
+                name="deadline"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Deadline (Optional)</FormLabel>
+                    <FormControl>
+                      <Input type="datetime-local" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            <FormField
+              control={form.control}
+              name="alarmTime"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center">
+                    <CalendarClock className="mr-2 h-4 w-4 text-accent" />
+                    Set Alarm (Optional)
+                  </FormLabel>
+                  <FormControl>
+                    <Input type="datetime-local" {...field} />
+                  </FormControl>
+                  <FormDescription>Get a notification if the app is open.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+              <PlusCircle className="mr-2 h-5 w-5" /> Add Task to List
             </Button>
           </form>
         </Form>
-
-        {currentTasks.length > 0 && (
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold mb-3">Tasks to Schedule ({currentTasks.length})</h3>
-            <ScrollArea className="h-[200px] rounded-md border p-4">
-              <div className="space-y-3">
-                {currentTasks.map((task) => (
-                  <Card key={task.id} className="p-3 flex justify-between items-start bg-background/70">
-                    <div>
-                      <p className="font-semibold">{task.taskName}</p>
-                      <div className="text-xs text-muted-foreground space-x-2">
-                        <span className="inline-flex items-center"><CalendarDays className="h-3 w-3 mr-1" /> {new Date(task.deadline).toLocaleString()}</span>
-                        <span className="inline-flex items-center">{importanceIcons[task.importance]} {importanceText[task.importance]}</span>
-                        <span className="inline-flex items-center"><Clock className="h-3 w-3 mr-1" /> {task.estimatedTime} min</span>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="icon" onClick={() => onRemoveTask(task.id)} aria-label="Remove task">
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </Card>
-                ))}
-              </div>
-            </ScrollArea>
-            <Button
-              onClick={onGenerateSchedule}
-              disabled={isLoading || currentTasks.length === 0}
-              className="w-full mt-4"
-            >
-              {isLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
-              )}
-              Generate Schedule
-            </Button>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
