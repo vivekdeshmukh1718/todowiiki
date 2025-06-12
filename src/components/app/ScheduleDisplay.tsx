@@ -141,7 +141,7 @@ export function ScheduleDisplay({ tasks, onToggleTask, onRemoveTask, onSetAlarm 
                             <CalendarClock className="mr-2 h-4 w-4 text-accent/70" />
                             Alarm: {formatDateTime(task.alarmTime)}
                             {task.alarmTime && !task.completed && new Date(task.alarmTime) <= new Date() && (
-                                <Badge variant="destructive" className="ml-2 animate-pulse">status is ringing but i am not able to hear anything</Badge>
+                                <Badge variant="destructive" className="ml-2 animate-pulse">ringing but no sound from my macine add a alaram tune which will be ringed once the alaram is turned on at the scheduled time</Badge>
                             )}
                         </div>
                     </div>
