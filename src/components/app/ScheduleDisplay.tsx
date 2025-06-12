@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarClock, Clock, AlertTriangle, Info, ShieldAlert, CheckCircle2, Circle, Trash2, BellPlus, BellOff, Edit3 } from 'lucide-react';
+import { CalendarClock, Clock, AlertTriangle, Info, ShieldAlert, CheckCircle2, Circle, Trash2, BellPlus, BellOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 
@@ -27,10 +27,8 @@ export function ScheduleDisplay({ tasks, onToggleTask, onRemoveTask, onSetAlarm 
 
   useEffect(() => {
     if (editingAlarm?.currentAlarm) {
-      // Convert ISO to datetime-local format if currentAlarm exists
       try {
         const date = new Date(editingAlarm.currentAlarm);
-        // YYYY-MM-DDTHH:mm
         const localDateTime = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
         setAlarmInput(localDateTime);
       } catch (e) {
@@ -90,8 +88,7 @@ export function ScheduleDisplay({ tasks, onToggleTask, onRemoveTask, onSetAlarm 
   const sortedTasks = [...tasks].sort((a, b) => {
     if (a.completed && !b.completed) return 1;
     if (!a.completed && b.completed) return -1;
-    // Could add more sorting logic here, e.g., by deadline or importance
-    return 0; // Keep original order for tasks with same completion status
+    return 0; 
   });
 
 
@@ -141,7 +138,7 @@ export function ScheduleDisplay({ tasks, onToggleTask, onRemoveTask, onSetAlarm 
                             <CalendarClock className="mr-2 h-4 w-4 text-accent/70" />
                             Alarm: {formatDateTime(task.alarmTime)}
                             {task.alarmTime && !task.completed && new Date(task.alarmTime) <= new Date() && (
-                                <Badge variant="destructive" className="ml-2 animate-pulse">ringing but no sound from my macine add a alaram tune which will be ringed once the alaram is turned on at the scheduled time</Badge>
+                                <Badge variant="destructive" className="ml-2 animate-pulse"></Badge>
                             )}
                         </div>
                     </div>
