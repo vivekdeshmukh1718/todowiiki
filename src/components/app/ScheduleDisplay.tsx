@@ -34,7 +34,7 @@ export function ScheduleDisplay({ tasks, onToggleTask, onRemoveTask, onSetAlarm 
         const localDateTime = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
         setAlarmInput(localDateTime);
       } catch (e) {
-        setAlarmInput(""); 
+        setAlarmInput("");
       }
     } else {
       setAlarmInput("");
@@ -68,13 +68,13 @@ export function ScheduleDisplay({ tasks, onToggleTask, onRemoveTask, onSetAlarm 
     medium: "Medium Priority",
     low: "Low Priority",
   };
-  
+
   const formatDateTime = (dateString?: string) => {
     if (!dateString) return "Not set";
     try {
       return new Date(dateString).toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     } catch (e) {
-      return dateString; 
+      return dateString;
     }
   };
 
@@ -86,7 +86,7 @@ export function ScheduleDisplay({ tasks, onToggleTask, onRemoveTask, onSetAlarm 
     }
     setEditingAlarm(null);
   };
-  
+
   const sortedTasks = [...tasks].sort((a, b) => {
     if (a.completed && !b.completed) return 1;
     if (!a.completed && b.completed) return -1;
@@ -105,10 +105,10 @@ export function ScheduleDisplay({ tasks, onToggleTask, onRemoveTask, onSetAlarm 
         <ScrollArea className="h-[600px] pr-3">
           <div className="space-y-4">
             {sortedTasks.map((task) => (
-              <Card 
-                key={task.id} 
+              <Card
+                key={task.id}
                 className={cn(
-                  "transition-all duration-300 ease-in-out hover:shadow-lg", 
+                  "transition-all duration-300 ease-in-out hover:shadow-lg",
                   task.completed ? "bg-muted/30 border-green-500/30" : "bg-card",
                   task.alarmTime && !task.completed && new Date(task.alarmTime) <= new Date() ? "border-2 border-accent animate-pulse-border-once" : ""
                 )}
@@ -141,7 +141,7 @@ export function ScheduleDisplay({ tasks, onToggleTask, onRemoveTask, onSetAlarm 
                             <CalendarClock className="mr-2 h-4 w-4 text-accent/70" />
                             Alarm: {formatDateTime(task.alarmTime)}
                             {task.alarmTime && !task.completed && new Date(task.alarmTime) <= new Date() && (
-                                <Badge variant="destructive" className="ml-2 animate-pulse">Ringing!</Badge>
+                                <Badge variant="destructive" className="ml-2 animate-pulse">status is ringing but i am not able to hear anything</Badge>
                             )}
                         </div>
                     </div>
@@ -162,14 +162,14 @@ export function ScheduleDisplay({ tasks, onToggleTask, onRemoveTask, onSetAlarm 
                     <Popover open={editingAlarm?.taskId === task.id} onOpenChange={(isOpen) => { if (!isOpen) setEditingAlarm(null); }}>
                       <PopoverTrigger asChild>
                         <Button variant="ghost" size="sm" onClick={() => setEditingAlarm({ taskId: task.id, currentAlarm: task.alarmTime })}>
-                          {task.alarmTime ? <BellOff className="h-4 w-4 mr-1" /> : <BellPlus className="h-4 w-4 mr-1" />} 
+                          {task.alarmTime ? <BellOff className="h-4 w-4 mr-1" /> : <BellPlus className="h-4 w-4 mr-1" />}
                           {task.alarmTime ? "Change Alarm" : "Set Alarm"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-4 space-y-2">
                         <p className="font-medium text-sm">Set alarm for "{task.taskName}"</p>
-                        <Input 
-                            type="datetime-local" 
+                        <Input
+                            type="datetime-local"
                             value={alarmInput}
                             onChange={(e) => setAlarmInput(e.target.value)}
                         />
