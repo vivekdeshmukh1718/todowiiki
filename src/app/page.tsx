@@ -15,13 +15,11 @@ export default function HomePage() {
   const [firedAlarms, setFiredAlarms] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    // Load tasks from local storage
     const storedTasks = localStorage.getItem('dayWeaverTasks');
     if (storedTasks) {
       try {
         const parsedTasks: AppTask[] = JSON.parse(storedTasks);
         setTasks(parsedTasks);
-        // Initialize firedAlarms for tasks that are already past their alarm time and completed
         const initialFired = new Set<string>();
         parsedTasks.forEach(task => {
           if (task.alarmTime && new Date(task.alarmTime) <= new Date() && task.completed) {
@@ -31,14 +29,13 @@ export default function HomePage() {
         setFiredAlarms(initialFired);
       } catch (error) {
         console.error("Failed to parse tasks from local storage:", error);
-        localStorage.removeItem('dayWeaverTasks'); // Clear corrupted data
+        localStorage.removeItem('dayWeaverTasks'); 
       }
     }
   }, []);
 
   useEffect(() => {
-    // Save tasks to local storage whenever they change
-    if (tasks.length > 0 || localStorage.getItem('dayWeaverTasks')) { // Avoid writing empty array on initial load if nothing was stored
+    if (tasks.length > 0 || localStorage.getItem('dayWeaverTasks')) {
          localStorage.setItem('dayWeaverTasks', JSON.stringify(tasks));
     }
   }, [tasks]);
@@ -55,14 +52,34 @@ export default function HomePage() {
               title: "⏰ Alarm!",
               description: `Time for: ${task.taskName}`,
             });
+            try {
+              // Assumes you have an alarm.mp3 file in your public/sounds/ directory
+              const audio = new Audio('/sounds/alarm.mp3');
+              audio.play().catch(error => {
+                // Autoplay might be blocked by the browser if the user hasn't interacted with the page yet
+                console.warn("Error playing alarm sound:", error.message, "Ensure user has interacted with the page or check browser autoplay policies.");
+                 toast({
+                    title: "Audio Playback Blocked",
+                    description: "Browser prevented alarm sound. Please interact with the page first.",
+                    variant: "destructive",
+                });
+              });
+            } catch (e) {
+              console.error("Could not play audio. Make sure /sounds/alarm.mp3 exists in your public directory.", e);
+               toast({
+                  title: "Audio File Error",
+                  description: "Could not load alarm.mp3. Please check console.",
+                  variant: "destructive",
+              });
+            }
             setFiredAlarms(prev => new Set(prev).add(task.id));
           }
         }
       });
     };
 
-    const intervalId = setInterval(checkAlarms, 10000); // Check every 10 seconds
-    checkAlarms(); // Initial check
+    const intervalId = setInterval(checkAlarms, 10000); 
+    checkAlarms(); 
 
     return () => clearInterval(intervalId);
   }, [tasks, toast, firedAlarms]);
@@ -98,7 +115,6 @@ export default function HomePage() {
       prevTasks.map(task => {
         if (task.id === taskId) {
           const updatedTask = { ...task, alarmTime };
-          // If alarm is removed or changed, remove from firedAlarms to allow it to fire again if reset
           if (!alarmTime || (task.alarmTime && alarmTime !== task.alarmTime)) {
              setFiredAlarms(prev => {
                 const newFired = new Set(prev);
