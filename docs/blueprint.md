@@ -1,4 +1,4 @@
-# **App Name**: Day Weaver
+# **App Name**: Day Weaver @ Vivek Deshmukh
 
 ## Core Features:
 

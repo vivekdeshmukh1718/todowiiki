@@ -20,17 +20,13 @@ export default function HomePage() {
       try {
         const parsedTasks: AppTask[] = JSON.parse(storedTasks);
         setTasks(parsedTasks);
-        const initialFired = new Set<string>();
-        parsedTasks.forEach(task => {
-          // Only consider alarms fired if the task was also completed with that alarm active
-          // Or, if an alarm was set and is in the past (even if not completed yet, to avoid re-firing for already past alarms on load)
-          if (task.alarmTime && new Date(task.alarmTime) <= new Date()) {
-            // This logic might need refinement depending on desired re-fire behavior
-            // For now, if it's past, consider it "fired" for this session's start
-             // initialFired.add(task.id); // Let's not add to firedAlarms initially, allow alarms to ring on load if due.
-          }
-        });
-        setFiredAlarms(initialFired);
+        // const initialFired = new Set<string>();
+        // parsedTasks.forEach(task => {
+        //   if (task.alarmTime && new Date(task.alarmTime) <= new Date()) {
+        //      // initialFired.add(task.id); // Let's not add to firedAlarms initially, allow alarms to ring on load if due.
+        //   }
+        // });
+        // setFiredAlarms(initialFired);
       } catch (error) {
         console.error("Failed to parse tasks from local storage:", error);
         localStorage.removeItem('dayWeaverTasks');
@@ -60,10 +56,20 @@ export default function HomePage() {
               const audio = new Audio('/sounds/alarm.mp3');
 
               audio.onerror = () => {
-                console.error("Error loading audio file. Check path and file integrity: /sounds/alarm.mp3. Element error:", audio.error);
+                let errorDetails = "Unknown audio error. The audio.error object was null or undefined.";
+                let consoleErrorMessage = "Error loading audio file. Check path and file integrity: /sounds/alarm.mp3.";
+
+                if (audio.error) {
+                  errorDetails = `Error code: ${audio.error.code}. Message: ${audio.error.message || 'No specific message.'}`;
+                  consoleErrorMessage = `Error loading audio file. Check path and file integrity: /sounds/alarm.mp3. MediaError details: Code: ${audio.error.code}, Message: ${audio.error.message || 'N/A'}`;
+                  console.error(consoleErrorMessage, audio.error); // Log the raw error object too
+                } else {
+                  console.error(consoleErrorMessage, "audio.error object was null or undefined.");
+                }
+                
                 toast({
                   title: "Audio File Load Error",
-                  description: "Failed to load alarm.mp3. Ensure it's at public/sounds/alarm.mp3 and is valid. Check console.",
+                  description: `Failed to load alarm.mp3. Ensure it's at public/sounds/alarm.mp3 and is valid. Details: ${errorDetails}. Check console.`,
                   variant: "destructive",
                 });
               };
@@ -127,7 +133,6 @@ export default function HomePage() {
       prevTasks.map(task => {
         if (task.id === taskId) {
           const updatedTask = { ...task, alarmTime };
-          // If alarm is removed or changed, reset its fired status so it can ring again if set to a future time
           if (!alarmTime || (task.alarmTime && alarmTime !== task.alarmTime)) {
              setFiredAlarms(prev => {
                 const newFired = new Set(prev);

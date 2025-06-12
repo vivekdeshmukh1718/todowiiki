@@ -6,7 +6,7 @@ export function Header() {
       <div className="container mx-auto flex items-center justify-center">
         <Zap className="h-10 w-10 mr-3 text-primary" />
         <h1 className="text-4xl font-bold tracking-tight text-primary">
-          Day Weaver
+          Day Weaver @ Vivek Deshmukh
         </h1>
       </div>
     </header>
