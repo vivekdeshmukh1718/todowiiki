@@ -22,20 +22,24 @@ export default function HomePage() {
         setTasks(parsedTasks);
         const initialFired = new Set<string>();
         parsedTasks.forEach(task => {
-          if (task.alarmTime && new Date(task.alarmTime) <= new Date() && task.completed) {
-            initialFired.add(task.id);
+          // Only consider alarms fired if the task was also completed with that alarm active
+          // Or, if an alarm was set and is in the past (even if not completed yet, to avoid re-firing for already past alarms on load)
+          if (task.alarmTime && new Date(task.alarmTime) <= new Date()) {
+            // This logic might need refinement depending on desired re-fire behavior
+            // For now, if it's past, consider it "fired" for this session's start
+             // initialFired.add(task.id); // Let's not add to firedAlarms initially, allow alarms to ring on load if due.
           }
         });
         setFiredAlarms(initialFired);
       } catch (error) {
         console.error("Failed to parse tasks from local storage:", error);
-        localStorage.removeItem('dayWeaverTasks'); 
+        localStorage.removeItem('dayWeaverTasks');
       }
     }
   }, []);
 
   useEffect(() => {
-    if (tasks.length > 0 || localStorage.getItem('dayWeaverTasks')) {
+    if (tasks.length > 0 || localStorage.getItem('dayWeaverTasks') !== null) {
          localStorage.setItem('dayWeaverTasks', JSON.stringify(tasks));
     }
   }, [tasks]);
@@ -53,22 +57,30 @@ export default function HomePage() {
               description: `Time for: ${task.taskName}`,
             });
             try {
-              // Assumes you have an alarm.mp3 file in your public/sounds/ directory
               const audio = new Audio('/sounds/alarm.mp3');
+
+              audio.onerror = () => {
+                console.error("Error loading audio file. Check path and file integrity: /sounds/alarm.mp3. Element error:", audio.error);
+                toast({
+                  title: "Audio File Load Error",
+                  description: "Failed to load alarm.mp3. Ensure it's at public/sounds/alarm.mp3 and is valid. Check console.",
+                  variant: "destructive",
+                });
+              };
+
               audio.play().catch(error => {
-                // Autoplay might be blocked by the browser if the user hasn't interacted with the page yet
-                console.warn("Error playing alarm sound:", error.message, "Ensure user has interacted with the page or check browser autoplay policies.");
+                console.warn("Error playing alarm sound:", error.message, "This often happens if the browser blocked autoplay. Ensure user has interacted with the page.");
                  toast({
-                    title: "Audio Playback Blocked",
-                    description: "Browser prevented alarm sound. Please interact with the page first.",
+                    title: "Audio Playback Blocked/Failed",
+                    description: "Browser may have blocked sound or it failed to play. Please interact with the page first. Check console.",
                     variant: "destructive",
                 });
               });
             } catch (e) {
-              console.error("Could not play audio. Make sure /sounds/alarm.mp3 exists in your public directory.", e);
+              console.error("Could not initialize Audio object. This is an unexpected error.", e);
                toast({
-                  title: "Audio File Error",
-                  description: "Could not load alarm.mp3. Please check console.",
+                  title: "Audio Initialization Error",
+                  description: "An unexpected error occurred setting up the alarm sound. Please check console.",
                   variant: "destructive",
               });
             }
@@ -78,8 +90,8 @@ export default function HomePage() {
       });
     };
 
-    const intervalId = setInterval(checkAlarms, 10000); 
-    checkAlarms(); 
+    const intervalId = setInterval(checkAlarms, 10000); // Check every 10 seconds
+    // checkAlarms(); // Initial check on mount
 
     return () => clearInterval(intervalId);
   }, [tasks, toast, firedAlarms]);
@@ -115,6 +127,7 @@ export default function HomePage() {
       prevTasks.map(task => {
         if (task.id === taskId) {
           const updatedTask = { ...task, alarmTime };
+          // If alarm is removed or changed, reset its fired status so it can ring again if set to a future time
           if (!alarmTime || (task.alarmTime && alarmTime !== task.alarmTime)) {
              setFiredAlarms(prev => {
                 const newFired = new Set(prev);
