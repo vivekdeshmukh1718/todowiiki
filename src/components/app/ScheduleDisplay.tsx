@@ -137,13 +137,13 @@ export function ScheduleDisplay({ tasks, onToggleTask, onRemoveTask, onSetAlarm 
                             <CalendarClock className="mr-2 h-4 w-4 text-primary/70" />
                             Deadline: {formatDateTime(task.deadline)}
                         </p>
-                        <p className={cn("flex items-center", task.completed && "line-through")}>
+                        <div className={cn("flex items-center", task.completed && "line-through")}>
                             <CalendarClock className="mr-2 h-4 w-4 text-accent/70" />
                             Alarm: {formatDateTime(task.alarmTime)}
                             {task.alarmTime && !task.completed && new Date(task.alarmTime) <= new Date() && (
                                 <Badge variant="destructive" className="ml-2 animate-pulse">Ringing!</Badge>
                             )}
-                        </p>
+                        </div>
                     </div>
                   </div>
                   {task.completed ? <CheckCircle2 className="h-6 w-6 text-green-500" /> : <Circle className="h-6 w-6 text-muted-foreground/30" />}
@@ -191,12 +191,3 @@ export function ScheduleDisplay({ tasks, onToggleTask, onRemoveTask, onSetAlarm 
     </Card>
   );
 }
-
-// Add this to globals.css or a style tag if preferred for the animation
-// For now, simple border will do. If specific animation is needed:
-// @keyframes pulse-border { 0%, 100% { border-color: hsl(var(--accent)); } 50% { border-color: hsl(var(--accent) / 0.5); } }
-// .animate-pulse-border-once { animation: pulse-border 1.5s ease-out; }
-// This is better handled in globals.css if desired.
-// Tailwind's built-in animate-pulse affects opacity, not border color easily.
-// For simplicity, the class is added but animation needs CSS.
-// A simple pulse on the "Ringing" badge is already present.
