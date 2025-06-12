@@ -20,13 +20,6 @@ export default function HomePage() {
       try {
         const parsedTasks: AppTask[] = JSON.parse(storedTasks);
         setTasks(parsedTasks);
-        // const initialFired = new Set<string>();
-        // parsedTasks.forEach(task => {
-        //   if (task.alarmTime && new Date(task.alarmTime) <= new Date()) {
-        //      // initialFired.add(task.id); // Let's not add to firedAlarms initially, allow alarms to ring on load if due.
-        //   }
-        // });
-        // setFiredAlarms(initialFired);
       } catch (error) {
         console.error("Failed to parse tasks from local storage:", error);
         localStorage.removeItem('dayWeaverTasks');
@@ -56,20 +49,32 @@ export default function HomePage() {
               const audio = new Audio('/sounds/alarm.mp3');
 
               audio.onerror = () => {
-                let errorDetails = "Unknown audio error. The audio.error object was null or undefined.";
+                let toastTitle = "Audio File Load Error";
+                let toastDescription = "Failed to load alarm.mp3. Ensure it's at public/sounds/alarm.mp3 and is valid. Check console for details.";
                 let consoleErrorMessage = "Error loading audio file. Check path and file integrity: /sounds/alarm.mp3.";
 
                 if (audio.error) {
-                  errorDetails = `Error code: ${audio.error.code}. Message: ${audio.error.message || 'No specific message.'}`;
-                  consoleErrorMessage = `Error loading audio file. Check path and file integrity: /sounds/alarm.mp3. MediaError details: Code: ${audio.error.code}, Message: ${audio.error.message || 'N/A'}`;
-                  console.error(consoleErrorMessage, audio.error); // Log the raw error object too
+                  const errorCode = audio.error.code;
+                  const errorMessage = audio.error.message || 'No specific message.';
+                  consoleErrorMessage = `Error loading audio file. Check path and file integrity: /sounds/alarm.mp3. MediaError details: Code: ${errorCode}, Message: ${errorMessage}`;
+                  console.error(consoleErrorMessage, audio.error); 
+
+                  if (errorCode === 4) { // MEDIA_ERR_SRC_NOT_SUPPORTED (often format/corruption)
+                    toastTitle = "Audio File Format/Corruption Error";
+                    toastDescription = `The alarm.mp3 file (at public/sounds/) appears to be corrupted or in a format your browser cannot play (Error Code: 4 - ${errorMessage}). Please replace it with a valid MP3 file. Test the MP3 in a desktop player first.`;
+                  } else {
+                    // General error if audio.error exists but is not code 4
+                    toastDescription = `Failed to load alarm.mp3. Error Code: ${errorCode} - ${errorMessage}. Ensure it's at public/sounds/alarm.mp3 and is valid. Check console.`;
+                  }
                 } else {
+                  // Fallback if audio.error object itself is null
                   console.error(consoleErrorMessage, "audio.error object was null or undefined.");
+                  toastDescription = "Failed to load alarm.mp3. An unknown audio error occurred. Ensure the file is at public/sounds/alarm.mp3 and is valid. Check console.";
                 }
                 
                 toast({
-                  title: "Audio File Load Error",
-                  description: `Failed to load alarm.mp3. Ensure it's at public/sounds/alarm.mp3 and is valid. Details: ${errorDetails}. Check console.`,
+                  title: toastTitle,
+                  description: toastDescription,
                   variant: "destructive",
                 });
               };
@@ -97,7 +102,6 @@ export default function HomePage() {
     };
 
     const intervalId = setInterval(checkAlarms, 10000); // Check every 10 seconds
-    // checkAlarms(); // Initial check on mount
 
     return () => clearInterval(intervalId);
   }, [tasks, toast, firedAlarms]);
